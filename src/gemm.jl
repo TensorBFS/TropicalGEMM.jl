@@ -12,6 +12,12 @@ LoopVectorization.check_type(::Type{Tropical{T}}) where {T} = LoopVectorization.
 ) where {A<:StaticBool,S<:StaticBool,NT<:StaticBool,RS,AU,F,N,AV,W,Nm1}
     VectorizationBase._vstore!(notropical(ptr), content(vu), u, a, s, nt, si)
 end
+
+@inline function VectorizationBase._vstore!(ptr::AbstractStridedPointer, vu::Tropical{<:VecUnroll{Nm1,W}}, u::Unroll{AU,F,N,AV,W}, m::AbstractMask{W}, a::A, s::S, nt::NT, si::StaticInt{RS}
+) where {A<:StaticBool,S<:StaticBool,NT<:StaticBool,RS,AU,F,N,AV,W,Nm1}
+    VectorizationBase._vstore!(notropical(ptr), content(vu), u, m, a, s, nt, si)
+end
+
 @inline function VectorizationBase.__vstore!(
         ptr::Ptr{Tropical{T}}, v::Tropical{VT}, i::I, m::AbstractMask{W}, a::A, s::S, nt::NT, si::StaticInt{RS}
     ) where {W, T <: NativeTypesExceptBit, VT <: Vec, I <: Index, A <: StaticBool, S <: StaticBool, NT <: StaticBool, RS}
