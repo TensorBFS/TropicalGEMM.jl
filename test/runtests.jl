@@ -2,5 +2,5 @@ using TropicalGEMM
 using Test
 
 @testset "TropicalGEMM.jl" begin
-    # Write your tests here.
+    include("gemm.jl")
 end
