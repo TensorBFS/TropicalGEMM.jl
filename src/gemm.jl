@@ -122,3 +122,8 @@ end
     elem = a == 0 ? -Inf : 0.0
     Tropical(T(elem)), b, c
 end
+
+# julia 1.5 patch
+@inline function VectorizationBase.VecUnroll(data::Tuple{T,Vararg{T,N}}) where {N,T<:Tropical}
+    Tropical.(VecUnroll(content.(data)))
+end

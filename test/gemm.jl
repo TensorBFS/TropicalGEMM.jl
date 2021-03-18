@@ -1,5 +1,6 @@
 using TropicalGEMM, Octavian, LoopVectorization
 using TropicalNumbers
+using VectorizationBase: VecUnroll, Vec
 using Test
 
 function distance(a::AbstractArray{<:Tropical}, b::AbstractArray{<:Tropical})
@@ -43,4 +44,9 @@ end
         @test distance(Octavian.matmul_serial(a, a), a*a) ≈ 0
         @test distance(Octavian.matmul(a, b), a*b) ≈ 0
     end
+end
+
+@testset "fix julia-1.5" begin
+    x=Tropical(Vec(1.0, 2.0))
+    @test VecUnroll((x, x)) === Tropical(VecUnroll((Vec(1.0, 2.0), Vec(1.0, 2.0))))
 end
