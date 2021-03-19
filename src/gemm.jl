@@ -7,6 +7,8 @@ using VectorizationBase: contiguous_batch_size, contiguous_axis, val_stride_rank
 LoopVectorization.check_args(::Type{T}, ::Type{T}) where T<:Tropical = true
 LoopVectorization.check_type(::Type{Tropical{T}}) where {T} = LoopVectorization.check_type(T)
 
+@inline Base.FastMath.add_fast(a::Tropical, b::Tropical) = Tropical(Base.FastMath.max_fast(content(a), content(b)))
+
 @inline function VectorizationBase._vstore!(
     ptr::AbstractStridedPointer, vu::Tropical{<:VecUnroll{Nm1,W}}, u::Unroll{AU,F,N,AV,W}, a::A, s::S, nt::NT, si::StaticInt{RS}
 ) where {A<:StaticBool,S<:StaticBool,NT<:StaticBool,RS,AU,F,N,AV,W,Nm1}
@@ -54,26 +56,29 @@ end
     VectorizationBase.OffsetPrecalc(notropical(ptr.ptr), ptr.precalc)
 end
 
-@inline function VectorizationBase._vload(ptr::AbstractStridedPointer{Tropical{T}}, u::Unroll, a::A, si::StaticInt{RS}) where {T,A<:StaticBool,RS}
-    res = VectorizationBase._vload(notropical(ptr), u, a, si)
+@inline function VectorizationBase._vload(ptr::AbstractStridedPointer{Tropical{T}}, u::Unroll, ::A, ::StaticInt{RS}) where {T,A<:StaticBool,RS}
+    res = VectorizationBase._vload(notropical(ptr), u, A(), StaticInt{RS}())
     Tropical(res)
 end
 
-@inline function VectorizationBase.zero_vecunroll(n::StaticInt{N}, w::StaticInt{W}, ::Type{Tropical{T}}, si::StaticInt{RS}) where {N,W,T,RS}
-    res = Tropical(VectorizationBase.zero_vecunroll(n, w, T, si))
-    return res
+@generated function VectorizationBase.zero_vecunroll(::StaticInt{N}, ::StaticInt{W}, ::Type{Tropical{T}}, ::StaticInt{RS}) where {N,W,T,RS}
+    quote
+        $(Expr(:meta,:inline))
+        t = Base.Cartesian.@ntuple $N n -> VectorizationBase._vbroadcast(StaticInt{$W}(), $(T(-Inf)), StaticInt{$RS}())
+        Tropical(VecUnroll(t))
+    end
 end
 
 @inline function Base.promote_rule(::Type{Tropical{T1}}, ::Type{Tropical{T2}}) where {T1<:VecUnroll,T2<:Vec}
     Tropical{promote_rule(T1, T2)}
 end
 
-@inline function VectorizationBase._vzero(::StaticInt{W}, ::Type{T}, ::StaticInt{RS}) where {W,T<:Tropical{FT},RS} where FT
+@inline function VectorizationBase._vzero(::StaticInt{W}, ::Type{T}, ::StaticInt{RS}) where {W,FT,T<:Tropical{FT},RS}
     Tropical(VectorizationBase._vbroadcast(StaticInt{W}(), FT(-Inf), StaticInt{RS}()))
 end
 
 @inline function VectorizationBase.fma(x::Tropical{V}, y::Tropical{V}, z::Tropical{V}) where {V<:VectorizationBase.AbstractSIMD}
-    Tropical(max(content(z), content(x) + content(y)))
+    Tropical(Base.FastMath.max_fast(content(z), Base.FastMath.add_fast(content(x), content(y))))
 end
 
 # is `gep` a shorthand for "get element pointer"?
@@ -102,5 +107,21 @@ end
 
 # julia 1.5 patch
 @inline function VectorizationBase.VecUnroll(data::Tuple{T,Vararg{T,N}}) where {N,T<:Tropical}
-    Tropical.(VecUnroll(content.(data)))
+    Tropical(VecUnroll(map(content, data)))
 end
+
+@inline LoopVectorization.vecmemaybe(x::Tropical) = x
+@inline function VectorizationBase.collapse_add(vu::Tropical{VecUnroll{N,W,T,V}}) where {N,W,T,V}
+    Tropical(VectorizationBase.collapse_max(content(vu)))
+end
+@inline function VectorizationBase.contract_add(vu::Tropical{VecUnroll{N,W,T,V}}, ::StaticInt{K}) where {N,W,T,V,K}
+    Tropical(VectorizationBase.contract_max(content(vu), StaticInt{K}()))
+end
+@inline function VectorizationBase.reduced_add(x::Tropical, y::Tropical)
+    Tropical(VectorizationBase.reduced_max(content(x), content(y)))
+end
+
+@inline function VectorizationBase.ifelse(f::F, m::AbstractMask, v1::Tropical, v2::Tropical, v3::Tropical) where {F}
+    Tropical(VectorizationBase.ifelse(m, content(f(v1, v2, v3)), content(v3)))
+end
+
