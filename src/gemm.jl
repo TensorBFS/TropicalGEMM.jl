@@ -1,7 +1,7 @@
 using TropicalNumbers, VectorizationBase
 using LoopVectorization
 using VectorizationBase: OffsetPrecalc, StaticBool, Bit, static, NativeTypes, Index, gep_quote, VectorIndex,
-    AbstractMask, NativeTypesExceptBit, AbstractSIMDVector, IndexNoUnroll, AbstractStridedPointer
+    AbstractMask, NativeTypesExceptBit, AbstractSIMDVector, IndexNoUnroll, AbstractStridedPointer, AbstractSIMD
 using VectorizationBase: contiguous_batch_size, contiguous_axis, val_stride_rank, bytestrides, offsets, memory_reference
 
 LoopVectorization.check_args(::Type{T}, ::Type{T}) where T<:Tropical = true
@@ -81,29 +81,15 @@ end
     Tropical(Base.FastMath.max_fast(content(z), Base.FastMath.add_fast(content(x), content(y))))
 end
 
-# is `gep` a shorthand for "get element pointer"?
+# `gep` is a shorthand for "get element pointer"
 @inline VectorizationBase.gep(ptr::Ptr{Tropical{T}}, i) where T = Ptr{Tropical{T}}(VectorizationBase.gep(Ptr{T}(ptr), i))
 
-# TODO: FIX!!!!!!
-@inline function Base.promote(a::Int, b::Tropical{T}) where {T<:Vec}
-    elem = a == 0 ? -Inf : 0.0
-    Tropical(T(elem)), b
-end
-
-@inline function Base.promote(a::Int, b::Tropical{T}, c::Tropical{T}) where {T<:Vec}
-    elem = a == 0 ? -Inf : 0.0
-    Tropical(T(elem)), b, c
-end
-
-@inline function Base.promote(a::Int, b::Tropical{T}) where {T<:VecUnroll}
-    elem = a == 0 ? -Inf : 0.0
-    Tropical(T(elem)), b
-end
-
-@inline function Base.promote(a::Int, b::Tropical{T}, c::Tropical{T}) where {T<:VecUnroll}
-    elem = a == 0 ? -Inf : 0.0
-    Tropical(T(elem)), b, c
-end
+@inline Base.:(*)(::StaticInt{0}, vx::Tropical{T}) where {T<:AbstractSIMD} = zero(Tropical{T})
+@inline Base.:(*)(::StaticInt{1}, vx::Tropical{T}) where {T<:AbstractSIMD} = vx
+@inline Base.:(*)(vx::Tropical{T}, ::StaticInt{0}) where {T<:AbstractSIMD} = zero(Tropical{T})
+@inline Base.:(*)(vx::Tropical{T}, ::StaticInt{1}) where {T<:AbstractSIMD} = vx
+@inline Base.:(+)(::StaticInt{0}, vx::Tropical{T}) where {T<:AbstractSIMD} = vx
+@inline Base.:(+)(vx::Tropical{T}, ::StaticInt{0}) where {T<:AbstractSIMD} = vx
 
 # julia 1.5 patch
 @inline function VectorizationBase.VecUnroll(data::Tuple{T,Vararg{T,N}}) where {N,T<:Tropical}
