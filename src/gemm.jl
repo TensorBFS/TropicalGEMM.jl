@@ -77,8 +77,11 @@ end
     Tropical(VectorizationBase._vbroadcast(StaticInt{W}(), FT(-Inf), StaticInt{RS}()))
 end
 
-@inline function VectorizationBase.fma(x::Tropical{V}, y::Tropical{V}, z::Tropical{V}) where {V<:VectorizationBase.AbstractSIMD}
+@inline function Base.fma(x::Tropical{V}, y::Tropical{V}, z::Tropical{V}) where {V<:VectorizationBase.AbstractSIMD}
     Tropical(Base.FastMath.max_fast(content(z), Base.FastMath.add_fast(content(x), content(y))))
+end
+@inline function Base.fma(::StaticInt{N}, y::Tropical{V}, z::Tropical{V}) where {N,V<:VectorizationBase.AbstractSIMD}
+    Base.FastMath.add_fast(Base.FastMath.mul_fast(StaticInt{N}(), y), z)
 end
 
 # `gep` is a shorthand for "get element pointer"
