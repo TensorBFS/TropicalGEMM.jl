@@ -1,8 +1,9 @@
 using TropicalNumbers, VectorizationBase
 using LoopVectorization
 using VectorizationBase: OffsetPrecalc, StaticBool, Bit, static, NativeTypes, Index, gep_quote, VectorIndex,
-    AbstractMask, NativeTypesExceptBit, AbstractSIMDVector, IndexNoUnroll, AbstractStridedPointer, AbstractSIMD
-using VectorizationBase: contiguous_batch_size, contiguous_axis, val_stride_rank, bytestrides, offsets, memory_reference
+    AbstractMask, NativeTypesExceptBit, AbstractSIMDVector, IndexNoUnroll, AbstractStridedPointer, AbstractSIMD,
+    contiguous_batch_size, contiguous_axis, val_stride_rank, bytestrides, offsets, memory_reference, register_size,
+    _vzero, static_sizeof
 
 LoopVectorization.check_args(::Type{T}, ::Type{T}) where T<:Tropical = true
 LoopVectorization.check_type(::Type{Tropical{T}}) where {T} = LoopVectorization.check_type(T)
@@ -77,6 +78,16 @@ end
     Tropical(VectorizationBase._vbroadcast(StaticInt{W}(), FT(-Inf), StaticInt{RS}()))
 end
 
+@generated function VectorizationBase._vzero(::Type{Tropical{VecUnroll{N,W,T,V}}}, ::StaticInt{RS}) where {N,W,T,V,RS}
+    t = Expr(:tuple); foreach(_ -> push!(t.args, :(_vzero(StaticInt{$W}(), Tropical{$T}, StaticInt{$RS}()))), 0:N)    
+    Expr(:block, Expr(:meta, :inline), :(VecUnroll($t)))
+end
+
+@inline Base.zero(::Type{Tropical{VecUnroll{N,W,T,V}}}) where {N,W,T,V} = _vzero(Tropical{VecUnroll{N,W,T,V}}, register_size())
+@inline Base.zero(::Tropical{VecUnroll{N,W,T,V}}) where {N,W,T,V} = zero(Tropical{VecUnroll{N,W,T,V}})
+@inline Base.zero(::Type{Tropical{Vec{W,T}}}) where {W,T} = _vzero(StaticInt{W}(), Tropical{T}, StaticInt{W}() * static_sizeof(T))
+@inline Base.zero(::Tropical{Vec{W,T}}) where {W,T} = zero(Tropical{Vec{W,T}})
+
 @inline function Base.fma(x::Tropical{V}, y::Tropical{V}, z::Tropical{V}) where {V<:VectorizationBase.AbstractSIMD}
     Tropical(Base.FastMath.max_fast(content(z), Base.FastMath.add_fast(content(x), content(y))))
 end
@@ -120,4 +131,3 @@ end
 @inline function VectorizationBase.ifelse(f::F, m::AbstractMask, v1::Tropical, v2::Tropical, v3::Tropical) where {F}
     Tropical(VectorizationBase.ifelse(m, content(f(v1, v2, v3)), content(v3)))
 end
-
