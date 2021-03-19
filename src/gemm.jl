@@ -84,13 +84,20 @@ end
 # `gep` is a shorthand for "get element pointer"
 @inline VectorizationBase.gep(ptr::Ptr{Tropical{T}}, i) where T = Ptr{Tropical{T}}(VectorizationBase.gep(Ptr{T}(ptr), i))
 
-@inline Base.:(*)(::StaticInt{0}, vx::Tropical{T}) where {T<:AbstractSIMD} = zero(Tropical{T})
-@inline Base.:(*)(::StaticInt{1}, vx::Tropical{T}) where {T<:AbstractSIMD} = vx
-@inline Base.:(*)(vx::Tropical{T}, ::StaticInt{0}) where {T<:AbstractSIMD} = zero(Tropical{T})
-@inline Base.:(*)(vx::Tropical{T}, ::StaticInt{1}) where {T<:AbstractSIMD} = vx
-@inline Base.:(+)(::StaticInt{0}, vx::Tropical{T}) where {T<:AbstractSIMD} = vx
-@inline Base.:(+)(vx::Tropical{T}, ::StaticInt{0}) where {T<:AbstractSIMD} = vx
-
+for f ∈ [:(Base.:(*)), :(Base.FastMath.mul_fast)]
+    @eval begin
+        @inline $f(::StaticInt{0}, vx::Tropical{T}) where {T<:AbstractSIMD} = zero(Tropical{T})
+        @inline $f(::StaticInt{1}, vx::Tropical{T}) where {T<:AbstractSIMD} = vx
+        @inline $f(vx::Tropical{T}, ::StaticInt{0}) where {T<:AbstractSIMD} = zero(Tropical{T})
+        @inline $f(vx::Tropical{T}, ::StaticInt{1}) where {T<:AbstractSIMD} = vx
+    end
+end
+for f ∈ [:(Base.:(+)), :(Base.FastMath.add_fast)]
+    @eval begin
+        @inline $f(::StaticInt{0}, vx::Tropical{T}) where {T<:AbstractSIMD} = vx
+        @inline $f(vx::Tropical{T}, ::StaticInt{0}) where {T<:AbstractSIMD} = vx
+    end
+end
 # julia 1.5 patch
 @inline function VectorizationBase.VecUnroll(data::Tuple{T,Vararg{T,N}}) where {N,T<:Tropical}
     Tropical(VecUnroll(map(content, data)))
