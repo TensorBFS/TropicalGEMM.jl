@@ -39,7 +39,7 @@ end
     for (T1,T2) in [[TropicalF64, TropicalF64], [TropicalF32, TropicalF32], [TropicalF64, Tropical{Int64}], [Tropical{Int64}, Tropical{Int64}]]
         To = promote_type(T1, T2)
         atol = sqrt(max(_eps(T1), _eps(T2)))
-        for n in [4, 40]
+        for n in [0, 1, 4, 40]  # 0 does not work yet!
             A = _rand(T1, n, n)
             B = _rand(T2, n, n)
             for (f, finplace) in [(Octavian.matmul_serial, Octavian.matmul_serial!),
@@ -54,11 +54,10 @@ end
                         @test_close f(a, b) naive_mul!(similar(a), a, b) atol
                         α, β = _rand(To,2)
                         c = _rand(To, n, n) .|> T1
-                        r1, r2 = finplace(copy(c), a, b, α, β), naive_mul!(copy(c), a, b, α, β)
                         @test_close finplace(copy(c), a, b, α, β) naive_mul!(copy(c), a, b, α, β) atol
-                        sa = view(a, 1:2, :)
-                        sb = view(b, :, 1:2)
-                        c = _rand(To, 2, 2)
+                        sa = view(a, 1:min(n, 2), :)
+                        sb = view(b, :, 1:min(n,2))
+                        c = _rand(To, min(n,2), min(n,2))
                         @test_close finplace(copy(c), sa, sb, α, β) naive_mul!(copy(c), sa, sb, α, β) atol
                     end
                 end
