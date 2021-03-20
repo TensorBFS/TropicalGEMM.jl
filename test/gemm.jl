@@ -1,22 +1,22 @@
 using TropicalGEMM, Octavian, LoopVectorization
 using TropicalNumbers
 using VectorizationBase: VecUnroll, Vec
+using TropicalGEMM: naive_mul!
 using Test
 
 function distance(a::AbstractArray{<:Tropical}, b::AbstractArray{<:Tropical})
     sum(abs.(content.(a) .- content.(b)))
 end
 
-function naivemm!(o::Matrix, a::Matrix, b::Matrix)
-    @assert size(a, 2) == size(b, 1) && size(o) == (size(a, 1), size(b, 2))
-    for j=1:size(b, 2)
-        for k=1:size(a, 2)
-            for i=1:size(a, 1)
-                @inbounds o[i,j] += a[i,k] * b[k,j]
-            end
-        end
-    end
-    return o
+_eps(::Type{Tropical{T}}) where T = eps(T)
+_eps(::Type{Tropical{T}}) where T<:Integer = 0
+_rand(::Type{T}, args...) where T = T <: Tropical{<:Integer} ? T.(rand(1:10, args...)) : T.(randn(args...))
+
+
+macro test_close(a, b, atol)
+    esc(
+        :(@test isapprox(distance($a, $b), 0; atol=$atol))
+    )
 end
 
 @testset "mydot" begin
@@ -35,15 +35,44 @@ end
     @test LoopVectorization.check_args(TropicalF64, TropicalF64)
 end
 
-
 @testset "matmul" begin
-    for n in [4, 40]
-        a = Tropical.(randn(n, n))
-        b = Tropical.(randn(n, n))
-        @test distance(Octavian.matmul_serial(a, b), a*b) ≈ 0
-        @test distance(Octavian.matmul_serial(a, a), a*a) ≈ 0
-        @test distance(Octavian.matmul(a, b), a*b) ≈ 0
+    for (T1,T2) in [[TropicalF64, TropicalF64], [TropicalF32, TropicalF32], [TropicalF64, Tropical{Int64}], [Tropical{Int64}, Tropical{Int64}]]
+        To = promote_type(T1, T2)
+        atol = sqrt(max(_eps(T1), _eps(T2)))
+        for n in [0, 1, 4, 40]  # 0 does not work yet!
+            A = _rand(T1, n, n)
+            B = _rand(T2, n, n)
+            for (f, finplace) in [(Octavian.matmul_serial, Octavian.matmul_serial!),
+                    (Octavian.matmul, Octavian.matmul!)]
+                for tA in [true, false]
+                    a = tA ? transpose(A) : A
+                    @show T1,T2,n,f,tA
+                    @test_close f(a, a) naive_mul!(similar(a), a, a) atol
+                    for tB in [true, false]
+                        b = tB ? transpose(B) : B
+                        @show T1,T2,n,f,tA,tB
+                        @test_close f(a, b) naive_mul!(similar(a), a, b) atol
+                        α, β = _rand(To,2)
+                        c = _rand(To, n, n) .|> T1
+                        @test_close finplace(copy(c), a, b, α, β) naive_mul!(copy(c), a, b, α, β) atol
+                        sa = view(a, 1:min(n, 2), :)
+                        sb = view(b, :, 1:min(n,2))
+                        c = _rand(To, min(n,2), min(n,2))
+                        @test_close finplace(copy(c), sa, sb, α, β) naive_mul!(copy(c), sa, sb, α, β) atol
+                    end
+                end
+            end
+        end
     end
+end
+
+@testset "*" begin
+    a = CountingTropical{Float64}.(randn(5,5))
+    b = CountingTropical{Float64}.(randn(5,50))
+    @test a * b == naive_mul!(similar(b), a, b)
+    a = Tropical{Float64}.(randn(5,5))
+    b = Tropical{Float64}.(randn(5,50))
+    @test_close a * b naive_mul!(similar(b), a, b) 1e-12
 end
 
 @testset "fix julia-1.5" begin
