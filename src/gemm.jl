@@ -137,8 +137,7 @@ end
     Tropical(VectorizationBase.ifelse(m, content(f(v1, v2, v3)), content(v3)))
 end
 
-@inline VectorizationBase.vsum(x::Tropical{<:VecUnroll}) = Tropical(VectorizationBase.vmaximum(content(x)))
-@inline VectorizationBase.vsum(x::Tropical{<:Vec}) = Tropical(VectorizationBase.vmaximum(content(x)))
+@inline VectorizationBase.vsum(x::Tropical{<:AbstractSIMD}) = Tropical(VectorizationBase.vmaximum(content(x)))
 
 # A patch for VectorizationBase, will be remove after the tagging of the new version.
 @inline VectorizationBase.vmax_fast(a::FloatingTypes, b::FloatingTypes) = Base.FastMath.max_fast(a, b)
