@@ -11,10 +11,10 @@ TropicalNumbers = "b3a74e9c-7526-4576-a4eb-79c0d4c32334"
 VectorizationBase = "3d5dd08c-fd9d-11e8-17fa-ed2836048c2f"
 
 [compat]
-LoopVectorization = "0.12.3"
+LoopVectorization = "0.12.4"
 Octavian = "0.2"
 TropicalNumbers = "0.2.3"
-VectorizationBase = "0.19.11"
+VectorizationBase = "0.19.12"
 julia = "1"
 
 [extras]

@@ -139,10 +139,6 @@ end
 
 @inline VectorizationBase.vsum(x::Tropical{<:AbstractSIMD}) = Tropical(VectorizationBase.vmaximum(content(x)))
 
-# A patch for VectorizationBase, will be remove after the tagging of the new version.
-@inline VectorizationBase.vmax_fast(a::FloatingTypes, b::FloatingTypes) = Base.FastMath.max_fast(a, b)
-@inline VectorizationBase.vmax_fast(a::Integer, b::Integer) = Base.FastMath.max_fast(a, b)
-
 # Overwrite the `mul!` in LinearAlgebra (also changes the behavior of `*` in Base)!
 using Octavian
 @inline function LinearAlgebra.mul!(o::AbstractMatrix{T}, a::AbstractMatrix{T}, b::AbstractMatrix{T}, α::Number, β::Number) where T<:Tropical
