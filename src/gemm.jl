@@ -1,8 +1,7 @@
-using TropicalNumbers, VectorizationBase
-using LoopVectorization
 using VectorizationBase: OffsetPrecalc, StaticBool, Bit, static, NativeTypes, Index, gep_quote, VectorIndex,
     AbstractMask, NativeTypesExceptBit, AbstractSIMDVector, IndexNoUnroll, AbstractStridedPointer, AbstractSIMD
-using VectorizationBase: contiguous_batch_size, contiguous_axis, val_stride_rank, bytestrides, offsets, memory_reference
+using VectorizationBase: contiguous_batch_size, contiguous_axis, val_stride_rank, bytestrides, offsets, memory_reference,
+    vmaximum, fmap, FloatingTypes
 
 LoopVectorization.check_args(::Type{T}, ::Type{T}) where T<:Tropical = true
 LoopVectorization.check_type(::Type{Tropical{T}}) where {T} = LoopVectorization.check_type(T)
@@ -20,10 +19,21 @@ end
     VectorizationBase._vstore!(notropical(ptr), content(vu), u, m, a, s, nt, si)
 end
 
+@inline function VectorizationBase._vstore!(
+    g::G, ptr::AbstractStridedPointer{T,D,C}, vu::Tropical{<:VecUnroll{U,W}}, u::Unroll{AU,F,N,AV,1,M,X,I}, a::A, s::S, nt::NT, si::StaticInt{RS}
+) where {T,D,C,U,AU,F,N,W,M,I,G<:Function,AV,A<:StaticBool, S<:StaticBool, NT<:StaticBool, RS,X}
+    VectorizationBase._vstore!(g, notropical(ptr), content(vu), u, a, s, nt, si)
+end
+
 @inline function VectorizationBase.__vstore!(
         ptr::Ptr{Tropical{T}}, v::Tropical{VT}, i::I, m::AbstractMask{W}, a::A, s::S, nt::NT, si::StaticInt{RS}
     ) where {W, T <: NativeTypesExceptBit, VT <: Vec, I <: Index, A <: StaticBool, S <: StaticBool, NT <: StaticBool, RS}
     VectorizationBase.__vstore!(Ptr{T}(ptr), content(v), i, m, a, s, nt, si)
+end
+@inline function VectorizationBase.__vstore!(
+    ptr::Ptr{Tropical{T}}, v::Tropical{VT}, i::VectorIndex{W}, a::A, s::S, nt::NT, si::StaticInt{RS}
+) where {T,VT<:Vec,W,S<:StaticBool,A<:StaticBool,NT<:StaticBool,RS}
+    VectorizationBase.__vstore!(Ptr{T}(ptr), content(v), i, a, s, nt, si)
 end
 
 @inline function VectorizationBase.__vload(ptr::Ptr{Tropical{T}}, i::I, m::AbstractMask, a::A, si::StaticInt{RS})  where {A <: StaticBool, T <: NativeTypes, I <: Index, RS}
@@ -64,7 +74,7 @@ end
 @generated function VectorizationBase.zero_vecunroll(::StaticInt{N}, ::StaticInt{W}, ::Type{Tropical{T}}, ::StaticInt{RS}) where {N,W,T,RS}
     quote
         $(Expr(:meta,:inline))
-        t = Base.Cartesian.@ntuple $N n -> VectorizationBase._vbroadcast(StaticInt{$W}(), $(T(-Inf)), StaticInt{$RS}())
+        t = Base.Cartesian.@ntuple $N n -> VectorizationBase._vbroadcast(StaticInt{$W}(), $(zero(Tropical{T}).n), StaticInt{$RS}())
         Tropical(VecUnroll(t))
     end
 end
@@ -74,7 +84,7 @@ end
 end
 
 @inline function VectorizationBase._vzero(::StaticInt{W}, ::Type{T}, ::StaticInt{RS}) where {W,FT,T<:Tropical{FT},RS}
-    Tropical(VectorizationBase._vbroadcast(StaticInt{W}(), FT(-Inf), StaticInt{RS}()))
+    Tropical(VectorizationBase._vbroadcast(StaticInt{W}(), zero(T).n, StaticInt{RS}()))
 end
 
 @inline function Base.fma(x::Tropical{V}, y::Tropical{V}, z::Tropical{V}) where {V<:VectorizationBase.AbstractSIMD}
@@ -121,3 +131,16 @@ end
     Tropical(VectorizationBase.ifelse(m, content(f(v1, v2, v3)), content(v3)))
 end
 
+@inline VectorizationBase.vsum(x::Tropical{<:VecUnroll}) = Tropical(VectorizationBase.vmaximum(content(x)))
+
+# A patch for VectorizationBase, will be remove after the tagging of the new version.
+@inline VectorizationBase.vmax_fast(a::FloatingTypes, b::FloatingTypes) = Base.FastMath.max_fast(a, b)
+@inline VectorizationBase.vmax_fast(a::Integer, b::Integer) = Base.FastMath.max_fast(a, b)
+
+# Overwrite the `mul!` in LinearAlgebra (also changes the behavior of `*` in Base)!
+using Octavian
+@inline function LinearAlgebra.mul!(o::AbstractMatrix{T}, a::AbstractMatrix{T}, b::AbstractMatrix{T}, α::Number, β::Number) where T<:Tropical
+    α = _convert_to_tropical(T, α)
+    β = _convert_to_tropical(T, β)
+    Octavian.matmul!(o, a, b, α, β)
+end
