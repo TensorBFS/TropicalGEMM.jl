@@ -47,8 +47,8 @@ end
     Tropical(VectorizationBase.__vload(Ptr{T}(ptr), i, a, si))
 end
 
-@inline function VectorizationBase.vbroadcast(a::Union{Val{W},StaticInt{W}}, s::Tropical{T}) where {W,T}
-    Tropical(VectorizationBase.vbroadcast(a, content(s)))
+@inline function VectorizationBase._vbroadcast(a::Union{Val{W},StaticInt{W}}, s::Tropical{T}, si::StaticInt{RS}) where {W,T,RS}
+    Tropical(VectorizationBase._vbroadcast(a, content(s), si))
 end
 
 @inline function VectorizationBase.stridedpointer(A::AbstractArray{T}) where {T <: Tropical}
@@ -141,8 +141,13 @@ end
 
 # Overwrite the `mul!` in LinearAlgebra (also changes the behavior of `*` in Base)!
 using Octavian
-@inline function LinearAlgebra.mul!(o::AbstractMatrix{T}, a::AbstractMatrix{T}, b::AbstractMatrix{T}, α::Number, β::Number) where T<:Tropical
-    α = _convert_to_tropical(T, α)
-    β = _convert_to_tropical(T, β)
-    Octavian.matmul!(o, a, b, α, β)
+const XTranspose{T} = Transpose{T, <:AbstractVecOrMat{T}}
+for TA in [:AbstractMatrix, :XTranspose]
+    for TB in [:AbstractMatrix, :XTranspose]
+        @eval function LinearAlgebra.mul!(o::AbstractMatrix{T}, a::$TA{T}, b::$TB{T}, α::Number, β::Number) where {T<:Tropical}
+            α = _convert_to_tropical(T, α)
+            β = _convert_to_tropical(T, β)
+            Octavian.matmul!(o, a, b, α, β)
+        end
+    end
 end
