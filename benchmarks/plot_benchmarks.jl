@@ -21,7 +21,7 @@ function plot_res(::Type{T}; dir=@__DIR__, max_threads=6) where T
     else
         error("not defined for type $T")
     end
-    ax = plot(x, data_theoretical(T, x), label="theoretical", legendfont=8, legend=:topleft, ylabel="seconds", xlabel="n", xscale=:log10, yscale=:log10)
+    ax = plot(T===Int ? [] : x, T===Int ? [] : data_theoretical(T, x), label="theoretical", legendfont=8, legend=:topleft, ylabel="seconds", xlabel="n", xscale=:log10, yscale=:log10)
     data = reshape(readdlm(joinpath(dir, "benchmarks.dat")), 6, 12)
     plot!(ax, x, (data')[:,[2*ID1-1, 2*ID1]] ./ 1e9, label=["Float32-naive" "Float32-serial" "Float64-naive" "Float64-serial" "Int-naive" "Int-serial"][:,[2*ID1-1,2*ID1]])
     for nthreads in 2:max_threads

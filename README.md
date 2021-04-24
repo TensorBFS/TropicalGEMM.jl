@@ -10,7 +10,7 @@ STILL WORK IN PROGRESS!
 
 https://github.com/JuliaSIMD/LoopVectorization.jl/issues/201
 
-### Get started
+## Get started
 
 Open a Julia REPL and type `]` to enter the `pkg>` mode, and then install related packages with
 ```julia
@@ -25,3 +25,11 @@ julia> a = Tropical.(randn(1000, 1000))
 
 julia> @benchmark Octavian.matmul_serial($a, $a)
 ```
+
+## Benchmarks
+
+Matrix size `n x n`, CPU Intel(R) Core(TM) i5-10400 CPU @ 2.90GHz.
+The benchmark and plotting scripts could be found in the benchmarks folder.
+
+![Float64](benchmarks/benchmark-float64.png)
+![Float32](benchmarks/benchmark-float32.png)
