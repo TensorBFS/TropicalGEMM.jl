@@ -2,12 +2,12 @@ using Plots, DelimitedFiles
 
 function data_theoretical(::Type{T}, ns) where T<:Union{Float64,Int64}
     # 0.0581s for 1000 x 1000, Float64
-    map(n->n^3/1000^3*0.0581, ns)
+    map(n->n^3/1000^3*0.0862, ns)
 end
 
 function data_theoretical(::Type{T}, ns) where T<:Union{Float32}
     # 0.0581s for 1000 x 1000, Float64
-    map(n->n^3/1000^3*0.0581/2, ns)
+    map(n->n^3/1000^3*0.0862/2, ns)
 end
 
 function plot_res(::Type{T}; dir=@__DIR__, max_threads=6) where T
