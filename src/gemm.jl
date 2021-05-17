@@ -1,7 +1,7 @@
 using VectorizationBase: OffsetPrecalc, StaticBool, Bit, static, NativeTypes, Index, gep_quote, VectorIndex,
     AbstractMask, NativeTypesExceptBit, AbstractSIMDVector, IndexNoUnroll, AbstractStridedPointer, AbstractSIMD
 using VectorizationBase: contiguous_batch_size, contiguous_axis, val_stride_rank, bytestrides, offsets, memory_reference,
-    vmaximum, fmap, FloatingTypes, IntegerIndex
+    vmaximum, fmap, FloatingTypes, IntegerIndex, LazyMulAdd
 
 LoopVectorization.check_args(::Type{T}, ::Type{T}) where T<:Tropical = true
 LoopVectorization.check_type(::Type{Tropical{T}}) where {T} = LoopVectorization.check_type(T)
@@ -92,7 +92,15 @@ end
 end
 
 # `gep` is a shorthand for "get element pointer"
-@inline VectorizationBase.gep(ptr::Ptr{Tropical{T}}, i) where T = Ptr{Tropical{T}}(VectorizationBase.gep(Ptr{T}(ptr), i))
+@inline function VectorizationBase._gep(ptr::Ptr{Tropical{T}}, ::StaticInt{N}, ::StaticInt{RS}) where {N, T <: NativeTypes, RS}
+    Ptr{Tropical{T}}(VectorizationBase._gep(Ptr{T}(ptr), StaticInt{N}(), StaticInt{RS}()))
+end
+@inline function VectorizationBase._gep(ptr::Ptr{Tropical{T}}, i::I, ::StaticInt{RS}) where {I <: Integer, T <: NativeTypes, RS}
+    Ptr{Tropical{T}}(VectorizationBase._gep(Ptr{T}(ptr), i, StaticInt{RS}()))
+end
+@inline function VectorizationBase._gep(ptr::Ptr{Tropical{T}}, i::LazyMulAdd{M,O,I}, ::StaticInt{RS}) where {T <: NativeTypes, I <: Integer, O, M, RS}
+    Ptr{Tropical{T}}(VectorizationBase._gep(Ptr{T}(ptr), i, StaticInt{RS}()))
+end
 
 for TP in [:NativeTypes, :AbstractSIMD]
     @eval @inline function Base.fma(x::Tropical{V}, y::Tropical{V}, z::Tropical{V}) where {V<:$TP}
