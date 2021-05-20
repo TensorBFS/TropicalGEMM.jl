@@ -1,7 +1,7 @@
 name = "TropicalGEMM"
 uuid = "a4ad3063-64a7-4bad-8738-34ed09bc0236"
 authors = ["GiggleLiu <cacate0129@gmail.com> and contributors"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -15,7 +15,7 @@ LoopVectorization = "0.12.4"
 Octavian = "0.2"
 TropicalNumbers = "0.2.3"
 VectorizationBase = "0.20"
-julia = "1"
+julia = "1.6"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
