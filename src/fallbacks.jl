@@ -23,10 +23,14 @@ function naive_mul!(o::AbstractMatrix{T0}, a::AbstractMatrix{T1}, b::AbstractMat
 end
 
 # Overwrite the `mul!` in LinearAlgebra (also changes the behavior of `*` in Base)!
-@inline function LinearAlgebra.mul!(o::AbstractMatrix{T}, a::AbstractMatrix{T}, b::AbstractMatrix{T}, α::Number, β::Number) where T<:TropicalTypes
-    α = _convert_to_tropical(T, α)
-    β = _convert_to_tropical(T, β)
-    naive_mul!(o, a, b, α, β)
+for TA in [:(AbstractMatrix{T} where T<:TropicalTypes), :(Transpose{T,S} where {T<:TropicalTypes,S<:AbstractVecOrMat{T}})]
+    for TB in [:(AbstractMatrix{T} where T<:TropicalTypes), :(Transpose{T,S} where {T<:TropicalTypes,S<:AbstractVecOrMat{T}})]
+        @eval @inline function LinearAlgebra.mul!(o::AbstractMatrix{TO}, a::$TA, b::$TB, α::Number, β::Number) where TO
+            α = _convert_to_tropical(TO, α)
+            β = _convert_to_tropical(TO, β)
+            naive_mul!(o, a, b, α, β)
+        end
+    end
 end
 
 _convert_to_tropical(::Type{T}, α::TropicalTypes) where T<:TropicalTypes = α
