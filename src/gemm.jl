@@ -75,6 +75,11 @@ end
     Tropical(res)
 end
 
+@inline function VectorizationBase._vload(ptr::AbstractStridedPointer{Tropical{T}}, u::Unroll, m::AbstractMask, ::A, ::StaticInt{RS}) where {T,A<:StaticBool,RS}
+    res = VectorizationBase._vload(notropical(ptr), u, m, A(), StaticInt{RS}())
+    Tropical(res)
+end
+
 @generated function VectorizationBase.zero_vecunroll(::StaticInt{N}, ::StaticInt{W}, ::Type{Tropical{T}}, ::StaticInt{RS}) where {N,W,T,RS}
     quote
         $(Expr(:meta,:inline))
