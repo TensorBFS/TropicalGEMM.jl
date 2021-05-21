@@ -100,7 +100,7 @@ end
 @inline function VectorizationBase._gep(ptr::Ptr{Tropical{T}}, ::StaticInt{N}, ::StaticInt{RS}) where {N, T <: NativeTypes, RS}
     Ptr{Tropical{T}}(VectorizationBase._gep(Ptr{T}(ptr), StaticInt{N}(), StaticInt{RS}()))
 end
-@inline function VectorizationBase._gep(ptr::Ptr{Tropical{T}}, i::I, ::StaticInt{RS}) where {I <: Integer, T <: NativeTypes, RS}
+@inline function VectorizationBase._gep(ptr::Ptr{Tropical{T}}, i::I, ::StaticInt{RS}) where {I <: IntegerIndex, T <: NativeTypes, RS}
     Ptr{Tropical{T}}(VectorizationBase._gep(Ptr{T}(ptr), i, StaticInt{RS}()))
 end
 @inline function VectorizationBase._gep(ptr::Ptr{Tropical{T}}, i::LazyMulAdd{M,O,I}, ::StaticInt{RS}) where {T <: NativeTypes, I <: Integer, O, M, RS}
