@@ -52,7 +52,7 @@ end
 end
 
 @inline function notropical(ptr::VectorizationBase.StridedPointer{Tropical{T},N,C,B,R,X,O}) where {T,N,C,B,R,X,O}
-    VectorizationBase.StridedPointer{T,N,C,B,R,X,O}(Ptr{T}(ptr.p), ptr.si)
+    stridedpointer(Ptr{T}(ptr.p), ptr.si, StaticInt{B}())
 end
 
 @inline function notropical(ptr::OffsetPrecalc{<:Tropical})
