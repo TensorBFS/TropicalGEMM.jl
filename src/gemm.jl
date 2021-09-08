@@ -51,19 +51,8 @@ end
     Tropical(VectorizationBase._vbroadcast(a, content(s), si))
 end
 
-@inline function VectorizationBase.stridedpointer(A::AbstractArray{T}) where {T <: Tropical}
-    p, r = memory_reference(A)
-    stridedpointer(p, contiguous_axis(A), contiguous_batch_size(A), val_stride_rank(A), bytestrides(A), offsets(A))
-end
-
-@inline function VectorizationBase.stridedpointer(
-    ptr::Ptr{T}, ::StaticInt{C}, ::StaticInt{B}, ::Val{R}, strd::X, offsets::O
-) where {T<:Tropical,C,B,R,N,X<:Tuple{Vararg{Integer,N}},O<:Tuple{Vararg{Integer,N}}}
-    VectorizationBase.StridedPointer{T,N,C,B,R,X,O}(ptr, strd, offsets)
-end
-
 @inline function notropical(ptr::VectorizationBase.StridedPointer{Tropical{T},N,C,B,R,X,O}) where {T,N,C,B,R,X,O}
-    VectorizationBase.StridedPointer{T,N,C,B,R,X,O}(Ptr{T}(ptr.p), ptr.strd, ptr.offsets)
+    VectorizationBase.StridedPointer{T,N,C,B,R,X,O}(Ptr{T}(ptr.p), ptr.si)
 end
 
 @inline function notropical(ptr::OffsetPrecalc{<:Tropical})
@@ -157,7 +146,7 @@ using Octavian
 const XTranspose{T} = Transpose{T, <:AbstractVecOrMat{T}}
 for TA in [:AbstractMatrix, :XTranspose]
     for TB in [:AbstractMatrix, :XTranspose]
-        @eval function LinearAlgebra.mul!(o::AbstractMatrix{T}, a::$TA{T}, b::$TB{T}, α::Number, β::Number) where {T<:Tropical}
+        @eval function LinearAlgebra.mul!(o::AbstractMatrix{T}, a::$TA{T}, b::$TB{T}, α::Number, β::Number) where {T<:Tropical{<:NativeTypes}}
             α = _convert_to_tropical(T, α)
             β = _convert_to_tropical(T, β)
             Octavian.matmul!(o, a, b, α, β)
@@ -169,7 +158,7 @@ using Octavian: zstridedpointer, preserve_buffer, matmul_sizes, matmul_params, d
     loopmul!, inlineloopmul!, maybeinline, matmul_only_β!, One, Zero, ArrayInterface, block_sizes, __matmul!
 
 # a patch to allow tropical types
-@inline function Octavian._matmul!(C::AbstractMatrix{T}, A, B, α, β, nthread, MKN) where {T<:Tropical}
+@inline function Octavian._matmul!(C::AbstractMatrix{T}, A, B, α, β, nthread, MKN) where {T<:Tropical{<:NativeTypes}}
     M, K, N = MKN === nothing ? matmul_sizes(C, A, B) : MKN
     if M * N == 0
         return
