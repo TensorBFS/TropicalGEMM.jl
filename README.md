@@ -31,3 +31,9 @@ The benchmark and plotting scripts could be found in the benchmarks folder.
 
 ![Float64](benchmarks/benchmark-float64.png)
 ![Float32](benchmarks/benchmark-float32.png)
+
+
+## Warnings
+
+It is expected to have an ambiguity error when one uses both `TropicalGEMM` and `CUDA`.
+If you see these errors, please include `example/cudapatch.jl` in your project.
