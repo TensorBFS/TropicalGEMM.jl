@@ -81,6 +81,6 @@ end
 end
 
 @testset "fix nan bug" begin
-    res = LinearAlgebra.mul!(Tropical.(fill(NaN, 2, 2)), Tropical.(randn(2,2)), Tropical.(randn(2,2)), 1, 0)
+    res = LinearAlgebra.mul!(Tropical.(fill(NaN, 2, 2)), transpose(Tropical.(randn(2,2))), Tropical.(randn(2,2)), 1, 0)
     @test !any(isnan, res)
 end
