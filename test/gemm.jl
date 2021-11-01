@@ -1,5 +1,5 @@
 using TropicalGEMM, Octavian, LoopVectorization
-using TropicalNumbers
+using TropicalNumbers, LinearAlgebra
 using VectorizationBase: VecUnroll, Vec
 using TropicalGEMM: naive_mul!
 using Test
@@ -78,4 +78,9 @@ end
 @testset "fix julia-1.5" begin
     x=Tropical(Vec(1.0, 2.0))
     @test VecUnroll((x, x)) === Tropical(VecUnroll((Vec(1.0, 2.0), Vec(1.0, 2.0))))
+end
+
+@testset "fix nan bug" begin
+    res = LinearAlgebra.mul!(Tropical.(fill(NaN, 2, 2)), transpose(Tropical.(randn(2,2))), Tropical.(randn(2,2)), 1, 0)
+    @test !any(isnan, res)
 end

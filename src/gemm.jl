@@ -149,6 +149,11 @@ for TA in [:AbstractMatrix, :XTranspose]
         @eval function LinearAlgebra.mul!(o::AbstractMatrix{T}, a::$TA{T}, b::$TB{T}, α::Number, β::Number) where {T<:Tropical{<:NativeTypes}}
             α = _convert_to_tropical(T, α)
             β = _convert_to_tropical(T, β)
+            if iszero(β)
+                @avx for j=1:size(o, 2), i=1:size(o, 1)
+                    o[i,j] = zero(T)
+                end
+            end
             Octavian.matmul!(o, a, b, α, β)
         end
     end
