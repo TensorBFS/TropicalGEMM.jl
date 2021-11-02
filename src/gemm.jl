@@ -147,15 +147,22 @@ const XTranspose{T} = Transpose{T, <:AbstractVecOrMat{T}}
 for TA in [:AbstractMatrix, :XTranspose]
     for TB in [:AbstractMatrix, :XTranspose]
         @eval function LinearAlgebra.mul!(o::AbstractMatrix{T}, a::$TA{T}, b::$TB{T}, α::Number, β::Number) where {T<:Tropical{<:NativeTypes}}
-            α = _convert_to_tropical(T, α)
-            β = _convert_to_tropical(T, β)
-            if iszero(β)
-                @avx for j=1:size(o, 2), i=1:size(o, 1)
-                    o[i,j] = zero(T)
-                end
-            end
+            α = _convert_to_static(T, α)
+            β = _convert_to_static(T, β)
             Octavian.matmul!(o, a, b, α, β)
         end
+    end
+end
+# NOTE: benchmark shows, the type instability here can be optimized by the compiler
+# so you do not need to worry about the overheads.
+@inline _convert_to_static(::Type{T}, α::TropicalTypes) where T<:TropicalTypes = α
+@inline function _convert_to_static(::Type{T}, α::Number) where T<:TropicalTypes
+    if iszero(α)
+        return StaticInt{0}()
+    elseif isone(α)
+        return StaticInt{1}()
+    else
+        throw(ArgumentError("$α is not a valid tropical number."))
     end
 end
 
