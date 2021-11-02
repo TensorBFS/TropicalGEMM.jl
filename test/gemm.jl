@@ -1,6 +1,6 @@
 using TropicalGEMM, Octavian, LoopVectorization
 using TropicalNumbers, LinearAlgebra
-using VectorizationBase: VecUnroll, Vec
+using VectorizationBase: VecUnroll, Vec, StaticInt
 using TropicalGEMM: naive_mul!
 using Test
 
@@ -17,6 +17,13 @@ macro test_close(a, b, atol)
     esc(
         :(@test isapprox(distance($a, $b), 0; atol=$atol))
     )
+end
+
+@testset "mul with static ints" begin
+    @test StaticInt{0}() * Tropical(3.0) == Tropical(-Inf)
+    @test StaticInt{1}() * Tropical(3.0) == Tropical(3.0)
+    @test Tropical(3.0) * StaticInt{0}() == Tropical(-Inf)
+    @test Tropical(3.0) * StaticInt{1}() == Tropical(3.0)
 end
 
 @testset "mydot" begin

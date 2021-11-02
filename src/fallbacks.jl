@@ -26,20 +26,14 @@ end
 for TA in [:(AbstractMatrix{T} where T<:TropicalTypes), :(Transpose{T,S} where {T<:TropicalTypes,S<:AbstractVecOrMat{T}})]
     for TB in [:(AbstractMatrix{T} where T<:TropicalTypes), :(Transpose{T,S} where {T<:TropicalTypes,S<:AbstractVecOrMat{T}})]
         @eval @inline function LinearAlgebra.mul!(o::AbstractMatrix{TO}, a::$TA, b::$TB, α::Number, β::Number) where TO
-            α = _convert_to_tropical(TO, α)
-            β = _convert_to_tropical(TO, β)
+            α = _convert_to_static(TO, α)
+            β = _convert_to_static(TO, β)
             naive_mul!(o, a, b, α, β)
         end
     end
 end
 
-_convert_to_tropical(::Type{T}, α::TropicalTypes) where T<:TropicalTypes = α
-function _convert_to_tropical(::Type{T}, α::Number) where T<:TropicalTypes
-    if iszero(α)
-        return zero(T)
-    elseif isone(α)
-        return one(T)
-    else
-        throw(ArgumentError("$α is not a valid tropical number."))
-    end
-end
+Base.:*(a::T, b::StaticInt{0}) where T<:TropicalTypes = zero(T)
+Base.:*(a::T, b::StaticInt{1}) where T<:TropicalTypes = a
+Base.:*(b::StaticInt{0}, a::T) where T<:TropicalTypes = zero(T)
+Base.:*(b::StaticInt{1}, a::T) where T<:TropicalTypes = a
