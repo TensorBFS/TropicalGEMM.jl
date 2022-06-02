@@ -4,6 +4,8 @@
 
 [![codecov](https://codecov.io/gh/TensorBFS/TropicalGEMM.jl/branch/master/graph/badge.svg?token=8F6PH5Q9PL)](https://codecov.io/gh/TensorBFS/TropicalGEMM.jl)
 
+The fastest tropical matrix multiplication in the world!
+
 ## See the discussion here
 
 https://github.com/JuliaSIMD/LoopVectorization.jl/issues/201
