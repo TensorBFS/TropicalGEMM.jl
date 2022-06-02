@@ -1,7 +1,6 @@
 # TropicalGEMM
 
 [![Build Status](https://github.com/TensorBFS/TropicalGEMM.jl/workflows/CI/badge.svg)](https://github.com/TensorBFS/TropicalGEMM.jl/actions)
-
 [![codecov](https://codecov.io/gh/TensorBFS/TropicalGEMM.jl/branch/master/graph/badge.svg?token=8F6PH5Q9PL)](https://codecov.io/gh/TensorBFS/TropicalGEMM.jl)
 
 The fastest tropical matrix multiplication in the world!
