@@ -135,10 +135,15 @@ end
     Tropical(VectorizationBase.reduced_max(content(x), content(y)))
 end
 
-@inline function VectorizationBase.ifelse(f::F, m::AbstractMask, v1::Tropical, v2::Tropical, v3::Tropical) where {F}
+@inline function VectorizationBase.ifelse(f::F, m::AbstractMask, v1::Tropical, v2::Tropical, v3::Tropical) where {F<:Function}
     Tropical(VectorizationBase.ifelse(m, content(f(v1, v2, v3)), content(v3)))
 end
-
+@inline function VectorizationBase.vifelse(f::F, m::AbstractMask, a::Tropical, b::Tropical, c::Tropical) where F<:Function
+    VectorizationBase.vifelse(m, f(a, b, c), c)
+end
+@inline function VectorizationBase.vifelse(m::AbstractMask, a::Tropical, b::Tropical)
+    Tropical(VectorizationBase.vifelse(m, content(a), content(b)))
+end
 @inline VectorizationBase.vsum(x::Tropical{<:AbstractSIMD}) = Tropical(VectorizationBase.vmaximum(content(x)))
 
 # Overwrite the `mul!` in LinearAlgebra (also changes the behavior of `*` in Base)!
