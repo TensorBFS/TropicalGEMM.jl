@@ -1,4 +1,5 @@
-const MaybeAdjOrTransMat{T} = Union{Adjoint{T, <:Matrix{T} where T}, Transpose{T, <:Matrix{T} where T}, Array{T, 2}}
+const ArrayOrSubArray{T,N} = Union{Array{T,N}, SubArray{T,N,<:Array}}
+const MaybeAdjOrTransMat{T} = Union{Adjoint{T,<:ArrayOrSubArray{T}}, Transpose{T,<:ArrayOrSubArray{T}}, ArrayOrSubArray{T,2}}
 # change the loop order in Base.
 function naive_mul!(o::AbstractMatrix{T0}, a::AbstractMatrix{T1}, b::AbstractMatrix{T2}, α=one(T0), β=zero(T0)) where {T0,T1,T2}
     @assert size(a, 2) == size(b, 1) && size(o) == (size(a, 1), size(b, 2))
