@@ -22,15 +22,12 @@ function naive_mul!(o::AbstractMatrix{T0}, a::AbstractMatrix{T1}, b::AbstractMat
     return o
 end
 
+# For types not nativelly supported, go to fallback.
 # Overwrite the `mul!` in LinearAlgebra (also changes the behavior of `*` in Base)!
-for TA in [:(AbstractMatrix{T} where T<:TropicalTypes), :(Transpose{T,S} where {T<:TropicalTypes,S<:AbstractVecOrMat{T}})]
-    for TB in [:(AbstractMatrix{T} where T<:TropicalTypes), :(Transpose{T,S} where {T<:TropicalTypes,S<:AbstractVecOrMat{T}})]
-        @eval @inline function LinearAlgebra.mul!(o::AbstractMatrix{TO}, a::$TA, b::$TB, α::Number, β::Number) where TO
-            α = _convert_to_static(TO, α)
-            β = _convert_to_static(TO, β)
-            naive_mul!(o, a, b, α, β)
-        end
-    end
+function LinearAlgebra.mul!(o::StridedMaybeAdjOrTransMat{TO}, a::StridedMaybeAdjOrTransMat, b::StridedMaybeAdjOrTransMat, α::Number, β::Number) where TO
+    α = _convert_to_static(TO, α)
+    β = _convert_to_static(TO, β)
+    naive_mul!(o, a, b, α, β)
 end
 
 Base.:*(a::T, b::StaticInt{0}) where T<:TropicalTypes = zero(T)

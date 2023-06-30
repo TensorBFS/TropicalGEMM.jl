@@ -25,6 +25,8 @@ julia> a = Tropical.(randn(1000, 1000))
 julia> @benchmark Octavian.matmul_serial($a, $a)
 ```
 
+**Warning:** using TropicalGEMM will overload the `mul!` function for Tropical numbers.
+
 ## Benchmarks
 
 Matrix size `n x n`, CPU Intel(R) Core(TM) i5-10400 CPU @ 2.90GHz.
