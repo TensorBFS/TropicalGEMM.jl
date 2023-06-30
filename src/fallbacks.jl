@@ -1,20 +1,21 @@
+const MaybeAdjOrTransMat{T} = Union{Adjoint{T, <:Matrix{T} where T}, Transpose{T, <:Matrix{T} where T}, Array{T, 2}}
 # change the loop order in Base.
 function naive_mul!(o::AbstractMatrix{T0}, a::AbstractMatrix{T1}, b::AbstractMatrix{T2}, α=one(T0), β=zero(T0)) where {T0,T1,T2}
     @assert size(a, 2) == size(b, 1) && size(o) == (size(a, 1), size(b, 2))
     a = convert(Matrix, a)
     b = convert(Matrix, b)
-    for j=1:size(b, 2)
+    for j=axes(b, 2)
         if !iszero(β)
-            @inbounds for i=1:size(a, 1)
+            @inbounds for i=axes(a, 1)
                 o[i,j] = β * o[i,j]
             end
         else
-            @inbounds for i=1:size(a, 1)
+            @inbounds for i=axes(a, 1)
                 o[i,j] = zero(T0)
             end
         end
-        for k=1:size(a, 2)
-            for i=1:size(a, 1)
+        for k=axes(a, 2)
+            for i=axes(a, 1)
                 @inbounds o[i,j] += α * a[i,k] * b[k,j]
             end
         end
@@ -24,7 +25,7 @@ end
 
 # For types not nativelly supported, go to fallback.
 # Overwrite the `mul!` in LinearAlgebra (also changes the behavior of `*` in Base)!
-function LinearAlgebra.mul!(o::StridedMaybeAdjOrTransMat{TO}, a::StridedMaybeAdjOrTransMat, b::StridedMaybeAdjOrTransMat, α::Number, β::Number) where TO
+function LinearAlgebra.mul!(o::MaybeAdjOrTransMat{TO}, a::MaybeAdjOrTransMat{<:Tropical}, b::MaybeAdjOrTransMat{<:Tropical}, α::Number, β::Number) where TO<:Tropical
     α = _convert_to_static(TO, α)
     β = _convert_to_static(TO, β)
     naive_mul!(o, a, b, α, β)

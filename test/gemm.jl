@@ -53,11 +53,11 @@ end
                     (Octavian.matmul, Octavian.matmul!)]
                 for tA in [true, false]
                     a = tA ? transpose(A) : A
-                    @show T1,T2,n,f,tA
+                    @info T1,T2,n,f,tA
                     @test_close f(a, a) naive_mul!(similar(a), a, a) atol
                     for tB in [true, false]
                         b = tB ? transpose(B) : B
-                        @show T1,T2,n,f,tA,tB
+                        @info T1,T2,n,f,tA,tB
                         @test_close f(a, b) naive_mul!(similar(a), a, b) atol
                         α, β = _rand(To,2)
                         c = _rand(To, n, n) .|> T1
