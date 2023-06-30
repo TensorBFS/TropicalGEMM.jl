@@ -1,8 +1,3 @@
-using VectorizationBase: OffsetPrecalc, StaticBool, Bit, static, NativeTypes, Index, gep_quote, VectorIndex,
-    AbstractMask, NativeTypesExceptBit, AbstractSIMDVector, IndexNoUnroll, AbstractStridedPointer, AbstractSIMD
-using VectorizationBase: contiguous_batch_size, contiguous_axis, val_stride_rank, bytestrides, offsets, memory_reference,
-    vmaximum, fmap, FloatingTypes, IntegerIndex, LazyMulAdd
-
 LoopVectorization.check_args(::Type{T}, ::Type{T}) where T<:Tropical = true
 LoopVectorization.check_type(::Type{Tropical{T}}) where {T} = LoopVectorization.check_type(T)
 
@@ -148,15 +143,10 @@ end
 
 # Overwrite the `mul!` in LinearAlgebra (also changes the behavior of `*` in Base)!
 using Octavian
-const XTranspose{T} = Transpose{T, <:AbstractVecOrMat{T}}
-for TA in [:AbstractMatrix, :XTranspose]
-    for TB in [:AbstractMatrix, :XTranspose]
-        @eval function LinearAlgebra.mul!(o::AbstractMatrix{T}, a::$TA{T}, b::$TB{T}, α::Number, β::Number) where {T<:Tropical{<:NativeTypes}}
-            α = _convert_to_static(T, α)
-            β = _convert_to_static(T, β)
-            Octavian.matmul!(o, a, b, α, β)
-        end
-    end
+function LinearAlgebra.mul!(o::MaybeAdjOrTransMat{T}, a::MaybeAdjOrTransMat{T}, b::MaybeAdjOrTransMat{T}, α::Number, β::Number) where {T<:Tropical{<:NativeTypes}}
+    α = _convert_to_static(T, α)
+    β = _convert_to_static(T, β)
+    Octavian.matmul!(o, a, b, α, β)
 end
 # NOTE: benchmark shows, the type instability here can be optimized by the compiler
 # so you do not need to worry about the overheads.
