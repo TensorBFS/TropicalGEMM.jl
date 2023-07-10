@@ -18,12 +18,8 @@ PrecompileTools.@setup_workload begin
     PrecompileTools.@compile_workload begin
         for T in (Float32, Float64, Int64)
             A = Tropical.(rand(T, 10, 10))
-            TA = transpose(A)
-            for x in [A, TA]
-                for y in [A, TA]
-                    x * y
-                end
-            end
+            O = Tropical.(rand(T, 10, 10))
+            LinearAlgebra.mul!(O, A, A)
         end
     end
 end
