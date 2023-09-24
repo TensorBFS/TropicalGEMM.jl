@@ -4,13 +4,14 @@ using VectorizationBase: VecUnroll, Vec, StaticInt
 using TropicalGEMM: naive_mul!
 using Test
 
-function distance(a::AbstractArray{<:Tropical}, b::AbstractArray{<:Tropical})
+function distance(a::AbstractArray{<:BlasSemiringTypes}, b::AbstractArray{<:BlasSemiringTypes})
     sum(abs.(content.(a) .- content.(b)))
 end
 
-_eps(::Type{Tropical{T}}) where T = eps(T)
-_eps(::Type{Tropical{T}}) where T<:Integer = 0
-_rand(::Type{T}, args...) where T = T <: Tropical{<:Integer} ? T.(rand(1:10, args...)) : T.(randn(args...))
+_eps(::Type{<:BlasSemiringTypes{T}}) where T = eps(T)
+_eps(::Type{<:BlasSemiringTypes{T}}) where T<:Integer = 0
+_rand(::Type{T}, args...) where T = T <: BlasSemiringTypes{<:Integer} ? T.(rand(0:10, args...)) : T.(randn(args...))
+_rand(::Type{T}, args...) where T <: TropicalMaxMul = T <: BlasSemiringTypes{<:Integer} ? T.(rand(0:10, args...)) : T.(rand(args...))
 
 
 macro test_close(a, b, atol)
@@ -46,7 +47,7 @@ end
     for (T1,T2) in [[TropicalF64, TropicalF64], [TropicalF32, TropicalF32], [TropicalF64, Tropical{Int64}], [Tropical{Int64}, Tropical{Int64}]]
         To = promote_type(T1, T2)
         atol = sqrt(max(_eps(T1), _eps(T2)))
-        for n in [0, 1, 4, 40]  # 0 does not work yet!
+        for n in [0, 1, 4, 40]
             A = _rand(T1, n, n)
             B = _rand(T2, n, n)
             for (f, finplace) in [(Octavian.matmul_serial, Octavian.matmul_serial!),
@@ -90,4 +91,37 @@ end
 @testset "fix nan bug" begin
     res = LinearAlgebra.mul!(Tropical.(fill(NaN, 2, 2)), transpose(Tropical.(randn(2,2))), Tropical.(randn(2,2)), 1, 0)
     @test !any(isnan, res)
+end
+
+@testset "MinPlus and MaxMul" begin
+    for (T1,T2) in [
+            [TropicalMinPlusF64, TropicalMinPlusF64],
+            [TropicalMinPlus{Int64}, TropicalMinPlus{Int64}],
+            [TropicalMaxMulF64, TropicalMaxMulF64], [TropicalMaxMul{Int64}, TropicalMaxMul{Int64}]
+        ]
+        for n in [0, 1, 4, 40]
+            A = _rand(T1, n, n)
+            B = _rand(T2, n, n)
+            for (f, finplace) in [(Octavian.matmul_serial, Octavian.matmul_serial!),
+                    (Octavian.matmul, Octavian.matmul!)]
+                for tA in [true, false]
+                    a = tA ? transpose(A) : A
+                    @info T1,T2,n,f,tA
+                    @test_close f(a, a) naive_mul!(similar(a), a, a) 1e-12
+                    for tB in [true, false]
+                        b = tB ? transpose(B) : B
+                        @info T1,T2,n,f,tA,tB
+                        @test_close f(a, b) naive_mul!(similar(a), a, b) 1e-12
+                        α, β = _rand(T1,2)
+                        c = _rand(T1, n, n)
+                        @test_close finplace(copy(c), a, b, α, β) naive_mul!(copy(c), a, b, α, β) 1e-12
+                        sa = view(a, 1:min(n, 2), :)
+                        sb = view(b, :, 1:min(n,2))
+                        c = _rand(T1, min(n,2), min(n,2))
+                        @test_close finplace(copy(c), sa, sb, α, β) naive_mul!(copy(c), sa, sb, α, β) 1e-12
+                    end
+                end
+            end
+        end
+    end
 end
