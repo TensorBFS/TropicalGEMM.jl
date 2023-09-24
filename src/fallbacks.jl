@@ -26,10 +26,12 @@ end
 
 # For types not nativelly supported, go to fallback.
 # Overwrite the `mul!` in LinearAlgebra (also changes the behavior of `*` in Base)!
-function LinearAlgebra.mul!(o::MaybeAdjOrTransMat{TO}, a::MaybeAdjOrTransMat{<:Tropical}, b::MaybeAdjOrTransMat{<:Tropical}, α::Number, β::Number) where TO<:Tropical
-    α = _convert_to_static(TO, α)
-    β = _convert_to_static(TO, β)
-    naive_mul!(o, a, b, α, β)
+for TT in [:Tropical, :TropicalMinPlus, TropicalMaxMul]
+    @eval function LinearAlgebra.mul!(o::MaybeAdjOrTransMat{TO}, a::MaybeAdjOrTransMat{<:$TT}, b::MaybeAdjOrTransMat{<:$TT}, α::Number, β::Number) where TO<:$TT
+        α = _convert_to_static(TO, α)
+        β = _convert_to_static(TO, β)
+        naive_mul!(o, a, b, α, β)
+    end
 end
 
 Base.:*(a::T, b::StaticInt{0}) where T<:TropicalTypes = zero(T)
