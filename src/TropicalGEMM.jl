@@ -6,7 +6,7 @@ using VectorizationBase: OffsetPrecalc, StaticBool, Bit, static, NativeTypes, In
 using VectorizationBase: contiguous_batch_size, contiguous_axis, val_stride_rank, bytestrides, offsets, memory_reference,
     vmaximum, fmap, FloatingTypes, IntegerIndex, LazyMulAdd
 
-export Tropical, TropicalF64, TropicalF32
+export Tropical, TropicalF64, TropicalF32, TropicalMinPlus, TropicalMinPlusF64, TropicalMinPlusF32, TropicalMaxMul, TropicalMaxMulF64, TropicalMaxMulF32, TropicalMaxPlus, TropicalMaxPlusF64, TropicalMaxPlusF32, BlasSemiringTypes
 
 include("fallbacks.jl")
 include("gemm.jl")
