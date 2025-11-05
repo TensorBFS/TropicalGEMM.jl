@@ -93,11 +93,15 @@ end
     @test !any(isnan, res)
 end
 
-@testset "MinPlus and MaxMul" begin
+@testset "MinPlus, MaxMul, MaxMin, and Bitwise" begin
     for (T1,T2) in [
             [TropicalMinPlusF64, TropicalMinPlusF64],
             [TropicalMinPlus{Int64}, TropicalMinPlus{Int64}],
-            [TropicalMaxMulF64, TropicalMaxMulF64], [TropicalMaxMul{Int64}, TropicalMaxMul{Int64}]
+            [TropicalMaxMulF64, TropicalMaxMulF64],
+            [TropicalMaxMul{Int64}, TropicalMaxMul{Int64}],
+            [TropicalMaxMinF64, TropicalMaxMinF64],
+            [TropicalMaxMinI64, TropicalMaxMinI64],
+            [TropicalBitwiseI64, TropicalBitwiseI64],
         ]
         for n in [0, 1, 4, 40]
             A = _rand(T1, n, n)

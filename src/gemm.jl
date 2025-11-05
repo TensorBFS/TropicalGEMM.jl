@@ -1,7 +1,9 @@
-const BlasSemiringTypes{T} = Union{Tropical{T}, TropicalMinPlus{T}, TropicalMaxMul{T}}
+const BlasSemiringTypes{T} = Union{Tropical{T}, TropicalMinPlus{T}, TropicalMaxMul{T}, TropicalMaxMin{T}, TropicalBitwise{T}}
 basetype(::Type{<:Tropical}) = Tropical
 basetype(::Type{<:TropicalMinPlus}) = TropicalMinPlus
 basetype(::Type{<:TropicalMaxMul}) = TropicalMaxMul
+basetype(::Type{<:TropicalMaxMin}) = TropicalMaxMin
+basetype(::Type{<:TropicalBitwise}) = TropicalBitwise
 
 # implement neginf for Vec and VecUnroll
 TropicalNumbers.neginf(::Type{Vec{N, T}}) where {N,T} = Vec(ntuple(i->neginf(T), N)...)
@@ -10,7 +12,7 @@ TropicalNumbers.neginf(::Type{VecUnroll{N,W,T,V}}) where {N,W,T,V} = VecUnroll(n
 LoopVectorization.check_args(::Type{T}, ::Type{T}) where T<:BlasSemiringTypes = true
 LoopVectorization.check_type(::Type{<:BlasSemiringTypes{T}}) where {T} = LoopVectorization.check_type(T)
 
-for TT in [:Tropical, :TropicalMaxMul, :TropicalMinPlus]
+for TT in [:Tropical, :TropicalMinPlus, :TropicalMaxMul, :TropicalMaxMin, :TropicalBitwise]
     @eval @inline function VectorizationBase._vstore!(
         ptr::AbstractStridedPointer, vu::$TT{<:VecUnroll{Nm1,W}}, u::Unroll{AU,F,N,AV,W}, a::A, s::S, nt::NT, si::StaticInt{RS}
     ) where {A<:StaticBool,S<:StaticBool,NT<:StaticBool,RS,AU,F,N,AV,W,Nm1}
@@ -101,7 +103,8 @@ for TP in [:NativeTypes, :AbstractSIMD]
     for (TT, F0, F1) in [
         (:Tropical, :max_fast, :add_fast),
         (:TropicalMinPlus, :min_fast, :add_fast),
-        (:TropicalMaxMul, :max_fast, :mul_fast)
+        (:TropicalMaxMul, :max_fast, :mul_fast),
+        (:TropicalMaxMin, :max_fast, :min_fast),
     ]
         @eval @inline function Base.fma(x::$TT{V}, y::$TT{V}, z::$TT{V}) where {V<:$TP}
             $TT(Base.FastMath.$F0(content(z), Base.FastMath.$F1(content(x), content(y))))
@@ -136,7 +139,9 @@ end
 for (TT, F0, F1, F2, F3, F4) in [
         (:Tropical, :max_fast, :collapse_max, :contract_max, :reduced_max, :vmaximum),
         (:TropicalMinPlus, :min_fast, :collapse_min, :contract_min, :reduced_min, :vminimum),
-        (:TropicalMaxMul, :max_fast, :collapse_max, :contract_max, :reduced_max, :vmaximum)
+        (:TropicalMaxMul, :max_fast, :collapse_max, :contract_max, :reduced_max, :vmaximum),
+        (:TropicalMaxMin, :max_fast, :collapse_max, :contract_max, :reduced_max, :vmaximum),
+        (:TropicalBitwise, :|,       :collape_or,   :contract_or,  :reduced_any, :vany),
     ]
     @eval @inline Base.FastMath.add_fast(a::$TT, b::$TT) = $TT(Base.FastMath.$F0(content(a), content(b)))
 
