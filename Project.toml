@@ -15,7 +15,7 @@ VectorizationBase = "3d5dd08c-fd9d-11e8-17fa-ed2836048c2f"
 LoopVectorization = "0.12.4"
 Octavian = "0.2.18, 0.3"
 PrecompileTools = "1"
-TropicalNumbers = "0.6"
+TropicalNumbers = "0.6.4"
 VectorizationBase = "0.21"
 julia = "1"
 
