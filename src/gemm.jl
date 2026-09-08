@@ -168,6 +168,37 @@ end
 
 # Overwrite the `mul!` in LinearAlgebra (also changes the behavior of `*` in Base)!
 using Octavian
+
+# Octavian works with raw pointers and therefore does not apply conjugation.
+# Check before it normalizes output layout: that can hide an Adjoint wrapper.
+_has_adjoint(a::Adjoint) = true
+function _has_adjoint(a::AbstractArray)
+    p = parent(a)
+    return p !== a && _has_adjoint(p)
+end
+function _check_no_adjoint(arrays...)
+    any(_has_adjoint, arrays) && throw(ArgumentError(
+        "TropicalGEMM does not support conjugating adjoints; use transpose(A) instead of A'."))
+    return nothing
+end
+
+@inline function Octavian.matmul!(C::AbstractVecOrMat{T}, A::AbstractMatrix,
+    B::AbstractVecOrMat, α=One(), β=Zero(), nthread=nothing
+) where {T<:BlasSemiringTypes{<:NativeTypes}}
+    _check_no_adjoint(C, A, B)
+    return invoke(Octavian.matmul!,
+        Tuple{AbstractVecOrMat,AbstractMatrix,AbstractVecOrMat,Any,Any,Any},
+        C, A, B, α, β, nthread)
+end
+
+@inline function Octavian.matmul_serial!(C::AbstractVecOrMat{T}, A::AbstractMatrix,
+    B::AbstractVecOrMat, α=One(), β=Zero()
+) where {T<:BlasSemiringTypes{<:NativeTypes}}
+    _check_no_adjoint(C, A, B)
+    return invoke(Octavian.matmul_serial!,
+        Tuple{AbstractVecOrMat,AbstractMatrix,AbstractVecOrMat,Any,Any}, C, A, B, α, β)
+end
+
 function LinearAlgebra.mul!(o::MaybeAdjOrTransMat{T}, a::MaybeAdjOrTransMat{T}, b::MaybeAdjOrTransMat{T}, α::Number, β::Number) where {T<:BlasSemiringTypes{<:NativeTypes}}
     _cpu_pointer_arrays(o, a, b) || return _generic_mul!(o, a, b, α, β)
     α = _convert_to_static(T, α)

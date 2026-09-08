@@ -33,6 +33,11 @@ julia> @btime $a * $a;
   66.916 ms (2 allocations: 7.63 MiB)
 ```
 
+Use `transpose(a)` for tropical matrices, rather than the conjugating adjoint
+`a'`. Conjugation is not defined for these semirings. The in-place Octavian
+entry points `matmul!` and `matmul_serial!` reject adjoint inputs and outputs
+before entering their pointer kernels, including adjoints wrapped in views.
+
 ## Benchmarks
 
 Matrix size `n x n`, CPU Intel(R) Core(TM) i5-10400 CPU @ 2.90GHz.
