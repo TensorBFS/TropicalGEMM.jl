@@ -169,6 +169,7 @@ end
 # Overwrite the `mul!` in LinearAlgebra (also changes the behavior of `*` in Base)!
 using Octavian
 function LinearAlgebra.mul!(o::MaybeAdjOrTransMat{T}, a::MaybeAdjOrTransMat{T}, b::MaybeAdjOrTransMat{T}, α::Number, β::Number) where {T<:BlasSemiringTypes{<:NativeTypes}}
+    _cpu_pointer_arrays(o, a, b) || return _generic_mul!(o, a, b, α, β)
     α = _convert_to_static(T, α)
     β = _convert_to_static(T, β)
     Octavian.matmul!(o, a, b, α, β)
